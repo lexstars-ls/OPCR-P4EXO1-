@@ -1,28 +1,26 @@
-package com.openclassrooms.notes
+package com.openclassrooms.notes.ui
 
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.openclassrooms.notes.R
 import com.openclassrooms.notes.databinding.ActivityMainBinding
-import com.openclassrooms.notes.data.repository.NotesRepository
-import com.openclassrooms.notes.widget.NoteItemDecoration
-import com.openclassrooms.notes.widget.NotesAdapter
+import com.openclassrooms.notes.ui.widget.NoteItemDecoration
+import com.openclassrooms.notes.ui.widget.NotesAdapter
+import com.openclassrooms.notes.ui.NotesViewModel
 import kotlinx.coroutines.launch
 
-/**
- * The main activity for the app.
- */
 class MainActivity : AppCompatActivity() {
 
-    /**
-     * The binding for the main layout.
-     */
     private lateinit var binding: ActivityMainBinding
 
+    // Adapter chargé d'afficher la liste des notes dans le RecyclerView.
     private val notesAdapter = NotesAdapter(emptyList())
 
-    private val notesRepository = NotesRepository()
+    // ViewModel associé à l'activité (créé automatiquement via delegation).
+    private val viewModel: NotesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,22 +30,25 @@ class MainActivity : AppCompatActivity() {
 
         initRecyclerView()
         initFABButton()
-        collectNotes()
+        observeNotes()
     }
 
     /**
-     * Collects notes from the repository and updates the adapter.
+     * Observe le Flow exposé par le ViewModel.
+     * À chaque nouvelle liste émise, l'adapter est mis à jour.
+     * L'observation est lancée dans lifecycleScope pour respecter le cycle de vie.
      */
-    private fun collectNotes() {
+    private fun observeNotes() {
         lifecycleScope.launch {
-            notesRepository.notes.collect {
-                notesAdapter.updateNotes(it)
+            viewModel.notes.collect { notes ->
+                notesAdapter.updateNotes(notes)
             }
         }
     }
 
     /**
-     * Initializes the FAB button.
+     * Initialise le bouton d'ajout.
+     * Pour l'instant, affiche simplement un message "à venir".
      */
     private fun initFABButton() {
         binding.btnAdd.setOnClickListener {
@@ -60,7 +61,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Initializes the RecyclerView.
+     * Configure le RecyclerView :
+     * - ajoute une décoration pour gérer les marges
+     * - associe l'adapter chargé d'afficher les notes
      */
     private fun initRecyclerView() {
         with(binding.recycler) {
@@ -70,10 +73,7 @@ class MainActivity : AppCompatActivity() {
                     resources.getInteger(R.integer.span_count)
                 )
             )
-
             adapter = notesAdapter
         }
-
     }
-
 }
